@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>振り返り機能付き時間管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- セキュリティステータス -->
+        <div class="security-status">
+            🔒 データは暗号化保護されています
+        </div>
+
+        <!-- パスワード設定 -->
+        <div class="card" id="passwordCard">
+            <h3>🔐 暗号化パスワード設定</h3>
+            <div class="password-setup">
+                <p style="margin-bottom: 10px; font-size: 0.9rem; color: #6b7280;">
+                    データを暗号化するためのパスワードを設定してください。
+                    デバイス間でデータを同期する際に必要になります。
+                </p>
+                <div class="input-group">
+                    <label>パスワード</label>
+                    <input type="password" id="masterPassword" placeholder="8文字以上のパスワード" minlength="8">
+                </div>
+                <div class="input-group">
+                    <label>パスワード確認</label>
+                    <input type="password" id="confirmPassword" placeholder="同じパスワードを再入力">
+                </div>
+                <button class="btn btn-sync" onclick="setupPassword()">🔒 暗号化を有効にする</button>
+                
+                <div style="margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 6px; font-size: 0.85rem;">
+                    ⚠️ パスワードを忘れるとデータを復元できません。必ず覚えやすいものを設定してください。
+                </div>
+            </div>
+        </div>
+
+        <!-- メインアプリ -->
+        <div id="mainApp" class="hidden">
+            <!-- タイマー部分 -->
+            <div class="card">
+                <div class="timer">
+                    <div class="task-name" id="currentTaskName">タスクを選択してください</div>
+                    <div class="timer-display" id="timerDisplay">0:00</div>
+                    
+                    <button class="btn btn-start hidden" id="startBtn" onclick="startTimer()">⏱️ 開始</button>
+                    <button class="btn btn-pause hidden" id="pauseBtn" onclick="pauseTimer()">⏸️ 一時停止</button>
+                    <button class="btn btn-stop hidden" id="stopBtn" onclick="stopTimer()">⏹️ 停止</button>
+                    <button class="btn btn-complete hidden" id="completeBtn" onclick="completeTask()">✅ 完了</button>
+                </div>
+            </div>
+
+            <!-- タスク追加 -->
+            <div class="card">
+                <h3>📝 新しいタスク</h3>
+                <div class="input-group">
+                    <label>タスク名</label>
+                    <input type="text" id="taskName" placeholder="何をしますか？">
+                </div>
+                <div class="input-group">
+                    <label>見積もり時間（分）</label>
+                    <input type="number" id="taskEstimate" value="30" min="1" max="480">
+                </div>
+                <button class="btn btn-add" onclick="addTask()">➕ タスク追加</button>
+            </div>
+
+            <!-- 統計 -->
+            <div class="card">
+                <h3>📊 今日の進捗</h3>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="completedCount">0</div>
+                        <div class="stat-label">完了</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalTime">0</div>
+                        <div class="stat-label">分</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タスクリスト -->
+            <div class="card">
+                <h3>📋 タスク一覧</h3>
+                <div class="task-list" id="taskList">
+                    <p style="text-align: center; color: #6b7280; padding: 30px 0;">
+                        タスクを追加してください
+                    </p>
+                </div>
+            </div>
+
+            <!-- 振り返り・レポート機能 -->
+            <div class="card">
+                <h3>📝 今日の振り返り</h3>
+                <button class="btn btn-add" onclick="toggleReview()">📋 振り返りを開始</button>
+                
+                <div class="sync-section hidden" id="reviewSection">
+                    <h4>✅ 今日できたこと</h4>
+                    <textarea id="todayAccomplishments" placeholder="今日完了したタスクや成果を記入してください..." class="review-textarea"></textarea>
+                    
+                    <h4>❌ 今日できなかったこと</h4>
+                    <textarea id="todayIncomplete" placeholder="未完了のタスクや課題を記入してください..." class="review-textarea"></textarea>
+                    
+                    <h4>💭 気づいたこと・改善点</h4>
+                    <textarea id="todayInsights" placeholder="今日の作業で気づいたことや改善したい点を記入してください..." class="review-textarea"></textarea>
+                    
+                    <button class="btn btn-complete" onclick="generateTomorrowTasks()">🤖 明日のタスクを自動生成</button>
+                    
+                    <div id="tomorrowSuggestions" class="hidden suggestions-container">
+                        <h4 style="color: #0c4a6e; margin-bottom: 10px;">💡 明日への提案</h4>
+                        <div id="suggestionsContent"></div>
+                        <button class="btn btn-start" onclick="addSuggestedTasks()" style="margin-top: 15px;">➕ 提案されたタスクを追加</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 同期機能 -->
+            <div class="card">
+                <h3>🔄 デバイス間同期</h3>
+                <button class="btn btn-sync" onclick="toggleSync()">📱 同期メニューを開く</button>
+                
+                <div class="sync-section hidden" id="syncSection">
+                    <h4>📤 データエクスポート</h4>
+                    <button class="btn btn-add" onclick="exportData()">📋 暗号化データをコピー</button>
+                    <div class="export-data hidden" id="exportData"></div>
+                    
+                    <h4>📥 データインポート</h4>
+                    <div class="input-group">
+                        <label>暗号化データ</label>
+                        <textarea id="importData" placeholder="暗号化されたデータを貼り付けてください" class="import-textarea"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>復号化パスワード</label>
+                        <input type="password" id="decryptPassword" placeholder="設定したパスワード">
+                    </div>
+                    <button class="btn btn-add" onclick="importData()">🔓 データをインポート</button>
+                    
+                    <h4>💾 バックアップ</h4>
+                    <button class="btn btn-add" onclick="downloadBackup()">📁 ファイルとしてダウンロード</button>
+                    <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="loadBackup(event)">
+                    <button class="btn btn-add" onclick="document.getElementById('fileInput').click()">📂 ファイルから復元</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
